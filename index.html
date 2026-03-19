@@ -9,11 +9,10 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 
     .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
 
-    /* Header */
     .header {
       background: #E4002B;
       color: white;
@@ -22,9 +21,8 @@
       align-items: center;
       gap: 10px;
       flex-shrink: 0;
-      z-index: 1000;
     }
-    .header .logo { font-size: 22px; font-weight: 800; }
+    .header .logo { font-size: 20px; font-weight: 800; }
     .header .count {
       background: white;
       color: #E4002B;
@@ -35,7 +33,6 @@
       margin-left: auto;
     }
 
-    /* Search */
     .search-bar {
       padding: 10px 12px;
       background: white;
@@ -44,7 +41,7 @@
     }
     .search-bar input {
       width: 100%;
-      padding: 10px 14px;
+      padding: 9px 14px;
       border: 2px solid #e0e0e0;
       border-radius: 25px;
       font-size: 14px;
@@ -52,23 +49,22 @@
     }
     .search-bar input:focus { border-color: #E4002B; }
 
-    /* Main content */
-    .main { flex: 1; display: flex; overflow: hidden; position: relative; }
+    .main { flex: 1; display: flex; overflow: hidden; }
 
-    /* Sidebar */
     .sidebar {
-      width: 320px;
+      width: 300px;
       overflow-y: auto;
       background: white;
       border-right: 1px solid #eee;
       -webkit-overflow-scrolling: touch;
+      flex-shrink: 0;
     }
     .store-card {
       padding: 10px 14px;
       border-bottom: 1px solid #f5f5f5;
       cursor: pointer;
     }
-    .store-card:active, .store-card.active { background: #fff0e0; }
+    .store-card:hover, .store-card.active { background: #fff5f5; }
     .store-name { font-weight: 700; font-size: 14px; color: #222; }
     .store-address { font-size: 12px; color: #777; margin-top: 3px; line-height: 1.3; }
     .store-tags { margin-top: 5px; display: flex; gap: 4px; flex-wrap: wrap; }
@@ -77,491 +73,140 @@
     .tag-paket { background: #fff3e0; color: #e65100; }
     .tag-gelal { background: #e8f5e9; color: #2e7d32; }
 
-    /* Map */
-    #map { flex: 1; min-height: 300px; z-index: 1; }
+    #map { flex: 1; }
 
-    /* Mobile toggle */
-    .mobile-toggle {
+    .toggle-btn {
       display: none;
       position: fixed;
       bottom: 20px;
       right: 20px;
-      z-index: 2000;
+      z-index: 9999;
       background: #E4002B;
       color: white;
       border: none;
       border-radius: 50%;
-      width: 56px;
-      height: 56px;
-      font-size: 24px;
+      width: 52px;
+      height: 52px;
+      font-size: 22px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       cursor: pointer;
     }
 
-    /* Responsive */
     @media (max-width: 768px) {
-      .main { flex-direction: column; }
-      .sidebar {
-        width: 100%;
-        height: 40%;
-        border-right: none;
-        border-bottom: 2px solid #eee;
-      }
-      #map { height: 60%; }
-      .mobile-toggle { display: block; }
-      .main.map-mode .sidebar { display: none; }
-      .main.map-mode #map { height: 100%; }
-      .main.list-mode .sidebar { height: 100%; }
-      .main.list-mode #map { display: none; }
+      .sidebar { width: 100%; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; }
+      .sidebar.hidden { display: none; }
+      #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+      .main { position: relative; }
+      .toggle-btn { display: flex; align-items: center; justify-content: center; }
     }
   </style>
 </head>
 <body>
-
 <div class="app">
   <div class="header">
     <div class="logo">🍗 KFC Türkiye</div>
-    <div class="count" id="branchCount">0 şube</div>
+    <div class="count" id="branchCount">Yükleniyor...</div>
   </div>
-
   <div class="search-bar">
     <input type="text" id="searchInput" placeholder="🔍 Şube, şehir veya ilçe ara..." />
   </div>
-
   <div class="main" id="main">
-    <div class="sidebar" id="sidebar"></div>
+    <div class="sidebar" id="sidebar"><div style="padding:16px;color:#999">Yükleniyor...</div></div>
     <div id="map"></div>
   </div>
 </div>
-
-<button class="mobile-toggle" id="toggleBtn" onclick="toggleView()">🗺️</button>
+<button class="toggle-btn" id="toggleBtn" onclick="toggleView()">🗺️</button>
 
 <script>
-// Data
-const stores = [
-  {
-    "id": 473,
-    "active": true,
-    "name": "Capacity",
-    "lat": 40.97787,
-    "lng": 28.871143,
-    "address": "Capacity Alışveriş Merkezi Ataköy 1. Kısım Mah. Fişekhane Caddesi No:7 Mağaza No: 2N-02",
-    "city": "İSTANBUL",
-    "district": "BAKIRKÖY",
-    "description": "",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 487,
-    "active": true,
-    "name": "Atakoy Nef",
-    "lat": 40.991673,
-    "lng": 28.835195,
-    "address": "Nef Ataköy 22 Alışveriş Merkezi 7-8-9-10 Kısım Mah. Çoban Çeşme E-5 Yanyol Cad. F Blok No:22\\/6B Ataköy",
-    "city": "İSTANBUL",
-    "district": "BAKIRKÖY",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 479,
-    "active": true,
-    "name": "Mall of Istanbul",
-    "lat": 41.062551,
-    "lng": 28.807526,
-    "address": "Mall Ol İstanbul Alışveriş Merkezi Ziya Gökalp Mah. Süleyman Demirel Cad. No:7 Mağaza no:521 İkitelli",
-    "city": "İSTANBUL",
-    "district": "BAŞAKŞEHİR",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 475,
-    "active": true,
-    "name": "Perlavista",
-    "lat": 41.016003,
-    "lng": 28.627508,
-    "address": "Perla Vista Alışveriş Merkezi Adnan Kahveci Mah. Yavuz Sultan Selim Bulvarı No:1\\/C 3.Kat Mağaza No: C 146",
-    "city": "İSTANBUL",
-    "district": "BEYLİKDÜZÜ",
-    "description": "",
-    "paket": true,
-    "gelAl": true
-  },
-  {
-    "id": 497,
-    "active": true,
-    "name": "Beykent Elit Carsi",
-    "lat": 41.007574,
-    "lng": 28.624168,
-    "address": "Adnan Kahveci Mah. Avrupa Cad. No:106B Birinci Bodrum Kat. Mağaza No:46-47",
-    "city": "İSTANBUL",
-    "district": "BEYLİKDÜZÜ",
-    "description": "",
-    "paket": true,
-    "gelAl": true
-  },
-  {
-    "id": 495,
-    "active": true,
-    "name": "Çekmeköy Mimar Sinan",
-    "lat": 41.033088,
-    "lng": 29.174838,
-    "address": "Mimar Sinan Mah. Mimar Sinan Cad. No:7\\/2",
-    "city": "İSTANBUL",
-    "district": "ÇEKMEKÖY",
-    "description": "",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 481,
-    "active": true,
-    "name": "Akbatı",
-    "lat": 41.056888,
-    "lng": 28.667816,
-    "address": "Akbatı Alışveriş Merkezi Koza Mah. 1655 Sokak Esenkent Mevkii No:6  Kat:2 Mağaza No: 243-244",
-    "city": "İSTANBUL",
-    "district": "ESENYURT",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat 11:00 - 22:00 </p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 474,
-    "active": true,
-    "name": "Historia",
-    "lat": 41.0144,
-    "lng": 28.94514,
-    "address": "Historia Alışveriş Merkezi Akşemsettin Mah. Adnan Menderes Vatan Bulv. No:2 Mağaza No:312\\/313\\/314",
-    "city": "İSTANBUL",
-    "district": "FATİH",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 491,
-    "active": true,
-    "name": "Halkalı",
-    "lat": 41.035922,
-    "lng": 28.788885,
-    "address": "Halkalı Merkez Mah. 1.İkitelli Cad. Meydan Halkalı Sitesi B Blok No:2\\/1H",
-    "city": "İSTANBUL",
-    "district": "KÜÇÜKÇEKMECE",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": true,
-    "gelAl": true
-  },
-  {
-    "id": 485,
-    "active": true,
-    "name": "Kurtkoy Lens",
-    "lat": 40.91291,
-    "lng": 29.298877,
-    "address": "Kurtköy Lens Yaşam Merkezi Yenişehir Mah. Osmanlı Bulvarı E Blok Mağaza no:193",
-    "city": "İSTANBUL",
-    "district": "PENDİK",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": true,
-    "gelAl": true
-  },
-  {
-    "id": 492,
-    "active": true,
-    "name": "Atlas Park",
-    "lat": 40.969781,
-    "lng": 29.255529,
-    "address": "Atlaspark Alışveriş Merkezi Abdurrahmangazi Mahallesi Fatih Bulvarı No:67 3.Kat Mağaza No: 3K23A",
-    "city": "İSTANBUL",
-    "district": "SULTANBEYLİ",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": true,
-    "gelAl": true
-  },
-  {
-    "id": 471,
-    "active": true,
-    "name": "Cevahir",
-    "lat": 41.063402,
-    "lng": 28.991644,
-    "address": "Cevahir Alışveriş Merkezi Büyükdere Cad. No:22 Mağaza No:513",
-    "city": "İSTANBUL",
-    "district": "ŞİŞLİ",
-    "description": "",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 478,
-    "active": true,
-    "name": "Özdilek AVM",
-    "lat": 41.077718,
-    "lng": 29.011558,
-    "address": "Özdilek Alışveriş Merkezi Esentepe Mah. Büyükdere Cad. Dede Korkut Sk. No:15 Mağaza No:K1-K001-A",
-    "city": "İSTANBUL",
-    "district": "ŞİŞLİ",
-    "description": "",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 484,
-    "active": true,
-    "name": "Tuzla Marina",
-    "lat": 40.816015,
-    "lng": 29.317597,
-    "address": "Viaport Marina Alışveriş Merkezi Cami Mah. Balıkçılar Sok. No:20 Mağaza No:ZK113",
-    "city": "İSTANBUL",
-    "district": "TUZLA",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": true,
-    "gelAl": true
-  },
-  {
-    "id": 496,
-    "active": true,
-    "name": "Tuzla Evora",
-    "lat": 40.858864,
-    "lng": 29.299463,
-    "address": "Tuzla Evora Aydıntepe Mah. Pr. Dr.Necmettin Erbakan Cad. Evora Sit. ET5 Blok No:7R-3",
-    "city": "İSTANBUL",
-    "district": "TUZLA",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": true,
-    "gelAl": true
-  },
-  {
-    "id": 477,
-    "active": true,
-    "name": "Canpark",
-    "lat": 41.025209,
-    "lng": 29.10657,
-    "address": "Canpark Alışveriş Merkezi Yamanevler Mah. Alemdağ Cad. No:169 Mağaza No: 318",
-    "city": "İSTANBUL",
-    "district": "ÜMRANİYE",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 472,
-    "active": true,
-    "name": "Cepa",
-    "lat": 39.910653,
-    "lng": 32.778221,
-    "address": "Cepa Alisveriş Merkezi Eskişehir Yolu 7.km Mustafa Kemal Mah. 2123 Cad. No:2 Magaza No: 3-07",
-    "city": "ANKARA",
-    "district": "ÇANKAYA",
-    "description": "",
-    "paket": true,
-    "gelAl": true
-  },
-  {
-    "id": 480,
-    "active": true,
-    "name": "Kentpark",
-    "lat": 39.910019,
-    "lng": 32.775953,
-    "address": "Kentpark Alışveriş Merkezi Mustafa Kemal Mah. Dumlupınar Bulvarı 7. Km No:164 Mağaza No:2K\\/64-65",
-    "city": "ANKARA",
-    "district": "ÇANKAYA",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 483,
-    "active": true,
-    "name": "Metromall",
-    "lat": 39.983255,
-    "lng": 32.610777,
-    "address": "Metromall Alışveriş Merkezi Tunahan Mah. 30 Ağustos Cad. No:2\\/A Mağaza No:117",
-    "city": "ANKARA",
-    "district": "ETİMESGUT",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 493,
-    "active": true,
-    "name": "Nata Vega",
-    "lat": 39.887557,
-    "lng": 32.934289,
-    "address": "Akşemsettin Mah. 2308 Sokak No::1 2.Kat Mağaza No:2K-175",
-    "city": "ANKARA",
-    "district": "MAMAK",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": true,
-    "gelAl": true
-  },
-  {
-    "id": 482,
-    "active": true,
-    "name": "Atlantis",
-    "lat": 39.970953,
-    "lng": 32.714426,
-    "address": "Atlantis Alışveriş Merkezi Kardelen Mah. Başkent Bulv. 224H-113",
-    "city": "ANKARA",
-    "district": "YENİMAHALLE",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 476,
-    "active": true,
-    "name": "Agora",
-    "lat": 38.395129,
-    "lng": 27.053537,
-    "address": "İzmir Agora Alışveriş Merkezi Mithatpaşa Caddes No.26-28 1.Kat Mağaza No:121",
-    "city": "İZMİR",
-    "district": "BALÇOVA",
-    "description": "",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 498,
-    "active": true,
-    "name": "Westpark",
-    "lat": 38.48091,
-    "lng": 27.180198,
-    "address": "Westpark Alışveriş Merkezi Refik Şevket İnce Mh. No:2148\\/9 sokak No:1 Kat:2 Mağaza No:224",
-    "city": "İZMİR",
-    "district": "BAYRAKLI",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 490,
-    "active": true,
-    "name": "Katip Celebi",
-    "lat": 38.511907,
-    "lng": 27.039109,
-    "address": "Balatçık Mah. 8788\\/11 Sk. No:14D\\/14E",
-    "city": "İZMİR",
-    "district": "ÇİĞLİ",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": false,
-    "gelAl": true
-  },
-  {
-    "id": 489,
-    "active": true,
-    "name": "Eyup Park",
-    "lat": 41.080601,
-    "lng": 28.927238,
-    "address": "Eyüppark Akşemsettin Mah. Atatürk Bulvarı No:8\\/1 G Blok No:106",
-    "city": "İSTANBUL",
-    "district": "EYÜP",
-    "description": "<div class=\"ql-editor\" contenteditable=\"true\"><p>Saat: 11:00 - 22:00</p></div><div class=\"ql-tooltip ql-hidden\"><a class=\"ql-preview\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"about:blank\"></a><input type=\"text\" data-formula=\"e=mc^2\" data-link=\"https://quilljs.com\" data-video=\"Embed URL\"><a class=\"ql-action\"></a><a class=\"ql-remove\"></a></div>",
-    "paket": true,
-    "gelAl": true
-  }
-];
-
-document.getElementById('branchCount').textContent = stores.length + ' şube';
-
-// Map init
-const map = L.map('map').setView([39.0, 35.0], 6);
+var map = L.map('map').setView([39.0, 35.0], 6);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap',
-  maxZoom: 18,
-}).addTo(map;
+  attribution: '&copy; OpenStreetMap',
+  maxZoom: 18
+}).addTo(map);
 
-// Fix map size after load
-setTimeout(function() { map.invalidateSize(); }, 100);
-
-// Custom KFC marker
-const kfcIcon = L.divIcon({
-  html: '<div style="background:#E4002B;color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35)">KFC</div>',
-  iconSize: [30, 30],
-  iconAnchor: [15, 15],
-  popupAnchor: [0, -15],
-  className: '',
+var kfcIcon = L.divIcon({
+  html: '<div style="background:#E4002B;color:#fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:9px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)">KFC</div>',
+  iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -15], className: ''
 });
 
-// Add markers
-const markers = [];
-stores.forEach(function(store) {
-  const m = L.marker([store.lat, store.lng], { icon: kfcIcon })
-    .bindPopup(
-      '<b style="font-size:14px">' + store.name + '</b><br>' +
-      '<span style="color:#666;font-size:12px">' + store.address + '</span><br>' +
-      (store.paket ? '<span style="color:#e65100;font-size:11px">📦 Paket</span> ' : '') +
-      (store.gelAl ? '<span style="color:#2e7d32;font-size:11px">🚶 Gel-Al</span>' : '')
+var allMarkers = [];
+var showingList = true;
+
+function initMap(stores) {
+  document.getElementById('branchCount').textContent = stores.length + ' şube';
+
+  stores.forEach(function(s) {
+    var m = L.marker([s.lat, s.lng], { icon: kfcIcon }).addTo(map);
+    m.bindPopup(
+      '<b>' + s.name + '</b><br>' +
+      '<small style="color:#666">' + s.address + '</small><br>' +
+      (s.paket ? '<small style="color:#e65100">📦 Paket </small>' : '') +
+      (s.gelAl ? '<small style="color:#2e7d32">🚶 Gel-Al</small>' : '')
     );
-  m.addTo(map);
-  markers.push({ marker: m, store: store });
-});
+    allMarkers.push({ m: m, s: s });
+  });
 
-// Render sidebar
-function renderSidebar(list) {
-  const sb = document.getElementById('sidebar');
-  sb.innerHTML = list.map(function(s) {
-    return '<div class="store-card" data-id="' + s.id + '" onclick="focusStore(' + s.id + ')">' +
+  renderList(stores);
+
+  document.getElementById('searchInput').addEventListener('input', function() {
+    var q = this.value.toLowerCase();
+    var filtered = stores.filter(function(s) {
+      return (s.name + s.address + s.city + s.district).toLowerCase().includes(q);
+    });
+    renderList(filtered);
+  });
+
+  setTimeout(function() { map.invalidateSize(); }, 200);
+}
+
+function renderList(stores) {
+  var sb = document.getElementById('sidebar');
+  if (!stores.length) {
+    sb.innerHTML = '<div style="padding:16px;color:#999">Sonuç bulunamadı</div>';
+    return;
+  }
+  sb.innerHTML = stores.map(function(s) {
+    return '<div class="store-card" onclick="focusStore(' + s.id + ')">' +
       '<div class="store-name">' + s.name + '</div>' +
       '<div class="store-address">' + s.address + '</div>' +
       '<div class="store-tags">' +
         '<span class="tag tag-city">' + s.city + '</span>' +
         (s.paket ? '<span class="tag tag-paket">📦 Paket</span>' : '') +
         (s.gelAl ? '<span class="tag tag-gelal">🚶 Gel-Al</span>' : '') +
-      '</div>' +
-    '</div>';
+      '</div></div>';
   }).join('');
 }
 
 function focusStore(id) {
-  const item = markers.find(function(m) { return m.store.id === id; });
-  if (item) {
-    map.setView([item.store.lat, item.store.lng], 15);
-    item.marker.openPopup();
-    document.querySelectorAll('.store-card').forEach(function(c) { c.classList.remove('active'); });
-    const el = document.querySelector('[data-id="' + id + '"]');
-    if (el) el.classList.add('active');
-    // On mobile, switch to map view
-    if (window.innerWidth <= 768) {
-      document.getElementById('main').className = 'main map-mode';
-      document.getElementById('toggleBtn').textContent = '📋';
-      setTimeout(function() { map.invalidateSize(); }, 300);
-    }
-  }
+  var item = allMarkers.find(function(x) { return x.s.id === id; });
+  if (!item) return;
+  map.setView([item.s.lat, item.s.lng], 15);
+  item.m.openPopup();
+  if (window.innerWidth <= 768) showMap();
 }
 
-// Search
-document.getElementById('searchInput').addEventListener('input', function(e) {
-  const q = e.target.value.toLowerCase();
-  const filtered = stores.filter(function(s) {
-    return s.name.toLowerCase().includes(q) ||
-      s.address.toLowerCase().includes(q) ||
-      s.city.toLowerCase().includes(q) ||
-      s.district.toLowerCase().includes(q);
-  });
-  renderSidebar(filtered);
-});
-
-// Mobile toggle
 function toggleView() {
-  const main = document.getElementById('main');
-  const btn = document.getElementById('toggleBtn');
-  if (main.classList.contains('map-mode')) {
-    main.className = 'main list-mode';
-    btn.textContent = '🗺️';
-  } else {
-    main.className = 'main map-mode';
-    btn.textContent = '📋';
-    setTimeout(function() { map.invalidateSize(); }, 300);
-  }
+  if (showingList) showMap(); else showList();
+}
+function showMap() {
+  document.getElementById('sidebar').classList.add('hidden');
+  document.getElementById('toggleBtn').textContent = '📋';
+  showingList = false;
+  setTimeout(function() { map.invalidateSize(); }, 200);
+}
+function showList() {
+  document.getElementById('sidebar').classList.remove('hidden');
+  document.getElementById('toggleBtn').textContent = '🗺️';
+  showingList = true;
 }
 
-// Initial render
-renderSidebar(stores);
+// Load data
+fetch('data.json')
+  .then(function(r) { return r.json(); })
+  .then(function(data) { initMap(data); })
+  .catch(function(e) {
+    document.getElementById('sidebar').innerHTML = '<div style="padding:16px;color:red">Veri yüklenemedi: ' + e + '</div>';
+  });
 </script>
 </body>
 </html>
