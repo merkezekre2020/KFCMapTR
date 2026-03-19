@@ -2,136 +2,140 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>KFC Türkiye - Tüm Şubeler</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; }
-    
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+
+    .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+    /* Header */
     .header {
-      background: linear-gradient(135deg, #E4002B 0%, #b8001f 100%);
+      background: #E4002B;
       color: white;
-      padding: 16px 20px;
+      padding: 12px 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      gap: 10px;
+      flex-shrink: 0;
+      z-index: 1000;
     }
-    .header .logo {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -1px;
-    }
-    .header .logo span { color: #fff; font-weight: 400; }
+    .header .logo { font-size: 22px; font-weight: 800; }
     .header .count {
       background: white;
       color: #E4002B;
-      padding: 4px 12px;
-      border-radius: 20px;
+      padding: 3px 10px;
+      border-radius: 15px;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13px;
+      margin-left: auto;
     }
-    
+
+    /* Search */
     .search-bar {
-      padding: 12px 16px;
+      padding: 10px 12px;
       background: white;
-      border-bottom: 1px solid #e0e0e0;
-      display: flex;
-      gap: 8px;
+      border-bottom: 1px solid #eee;
+      flex-shrink: 0;
     }
     .search-bar input {
-      flex: 1;
+      width: 100%;
       padding: 10px 14px;
       border: 2px solid #e0e0e0;
       border-radius: 25px;
-      font-size: 15px;
+      font-size: 14px;
       outline: none;
-      transition: border-color 0.2s;
     }
     .search-bar input:focus { border-color: #E4002B; }
-    
-    .content { display: flex; height: calc(100vh - 130px); }
-    
+
+    /* Main content */
+    .main { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+    /* Sidebar */
     .sidebar {
-      width: 350px;
+      width: 320px;
       overflow-y: auto;
       background: white;
-      border-right: 1px solid #e0e0e0;
+      border-right: 1px solid #eee;
+      -webkit-overflow-scrolling: touch;
     }
     .store-card {
-      padding: 12px 16px;
-      border-bottom: 1px solid #f0f0f0;
+      padding: 10px 14px;
+      border-bottom: 1px solid #f5f5f5;
       cursor: pointer;
-      transition: background 0.2s;
     }
-    .store-card:hover { background: #fff5f5; }
-    .store-card.active { background: #ffe0e0; border-left: 3px solid #E4002B; }
-    .store-name {
-      font-weight: 700;
-      color: #333;
-      font-size: 15px;
-      margin-bottom: 4px;
-    }
-    .store-address {
-      color: #666;
-      font-size: 13px;
-      line-height: 1.4;
-    }
-    .store-tags {
-      display: flex;
-      gap: 4px;
-      margin-top: 6px;
-      flex-wrap: wrap;
-    }
-    .tag {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 11px;
-    }
-    .tag-city { background: #f0f0f0; color: #666; }
+    .store-card:active, .store-card.active { background: #fff0e0; }
+    .store-name { font-weight: 700; font-size: 14px; color: #222; }
+    .store-address { font-size: 12px; color: #777; margin-top: 3px; line-height: 1.3; }
+    .store-tags { margin-top: 5px; display: flex; gap: 4px; flex-wrap: wrap; }
+    .tag { font-size: 10px; padding: 2px 7px; border-radius: 8px; }
+    .tag-city { background: #eee; color: #555; }
     .tag-paket { background: #fff3e0; color: #e65100; }
     .tag-gelal { background: #e8f5e9; color: #2e7d32; }
-    
-    #map { flex: 1; }
-    
-    .info-bar {
-      padding: 8px 16px;
-      background: #fafafa;
-      border-bottom: 1px solid #e0e0e0;
-      font-size: 13px;
-      color: #666;
+
+    /* Map */
+    #map { flex: 1; min-height: 300px; z-index: 1; }
+
+    /* Mobile toggle */
+    .mobile-toggle {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 2000;
+      background: #E4002B;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      font-size: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
     }
-    
+
+    /* Responsive */
     @media (max-width: 768px) {
-      .content { flex-direction: column; height: auto; }
-      .sidebar { width: 100%; height: 200px; }
-      #map { height: 50vh; }
+      .main { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        height: 40%;
+        border-right: none;
+        border-bottom: 2px solid #eee;
+      }
+      #map { height: 60%; }
+      .mobile-toggle { display: block; }
+      .main.map-mode .sidebar { display: none; }
+      .main.map-mode #map { height: 100%; }
+      .main.list-mode .sidebar { height: 100%; }
+      .main.list-mode #map { display: none; }
     }
   </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="logo">KFC <span>Türkiye</span></div>
-  <div class="count" id="branchCount">0 şube</div>
+<div class="app">
+  <div class="header">
+    <div class="logo">🍗 KFC Türkiye</div>
+    <div class="count" id="branchCount">0 şube</div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="🔍 Şube, şehir veya ilçe ara..." />
+  </div>
+
+  <div class="main" id="main">
+    <div class="sidebar" id="sidebar"></div>
+    <div id="map"></div>
+  </div>
 </div>
 
-<div class="search-bar">
-  <input type="text" id="searchInput" placeholder="Şube adı, şehir veya ilçe ara..." />
-</div>
+<button class="mobile-toggle" id="toggleBtn" onclick="toggleView()">🗺️</button>
 
-<div class="info-bar">
-  🍗 Paket servis ve gel-al seçenekleri mevcut. Tıkla ve haritada gör!
-</div>
-
-<div class="content">
-  <div class="sidebar" id="sidebar"></div>
-  <div id="map"></div>
-</div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // Data
 const stores = [
@@ -462,76 +466,99 @@ const stores = [
   }
 ];
 
-// Update count
-document.getElementById('branchCount').textContent = `${stores.length} şube`;
+document.getElementById('branchCount').textContent = stores.length + ' şube';
 
-// Map
+// Map init
 const map = L.map('map').setView([39.0, 35.0], 6);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap',
   maxZoom: 18,
-}).addTo(map);
+}).addTo(map;
+
+// Fix map size after load
+setTimeout(function() { map.invalidateSize(); }, 100);
 
 // Custom KFC marker
 const kfcIcon = L.divIcon({
-  html: '<div style="background:#E4002B;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)">KFC</div>',
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-  popupAnchor: [0, -14],
+  html: '<div style="background:#E4002B;color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35)">KFC</div>',
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+  popupAnchor: [0, -15],
   className: '',
 });
 
 // Add markers
 const markers = [];
-stores.forEach(store => {
-  const marker = L.marker([store.lat, store.lng], { icon: kfcIcon })
-    .bindPopup(`
-      <b style="font-size:14px">${store.name}</b><br>
-      <span style="color:#666;font-size:12px">${store.address}</span><br>
-      ${store.paket ? '<span style="color:#e65100;font-size:11px">📦 Paket Servis</span> ' : ''}
-      ${store.gelAl ? '<span style="color:#2e7d32;font-size:11px">🚶 Gel-Al</span>' : ''}
-    `);
-  marker.addTo(map);
-  markers.push({ marker, store });
+stores.forEach(function(store) {
+  const m = L.marker([store.lat, store.lng], { icon: kfcIcon })
+    .bindPopup(
+      '<b style="font-size:14px">' + store.name + '</b><br>' +
+      '<span style="color:#666;font-size:12px">' + store.address + '</span><br>' +
+      (store.paket ? '<span style="color:#e65100;font-size:11px">📦 Paket</span> ' : '') +
+      (store.gelAl ? '<span style="color:#2e7d32;font-size:11px">🚶 Gel-Al</span>' : '')
+    );
+  m.addTo(map);
+  markers.push({ marker: m, store: store });
 });
 
 // Render sidebar
-function renderSidebar(filteredStores) {
-  const sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = filteredStores.map(s => `
-    <div class="store-card" data-id="${s.id}" onclick="focusStore(${s.id})">
-      <div class="store-name">${s.name}</div>
-      <div class="store-address">${s.address}</div>
-      <div class="store-tags">
-        <span class="tag tag-city">${s.city}</span>
-        ${s.paket ? '<span class="tag tag-paket">📦 Paket</span>' : ''}
-        ${s.gelAl ? '<span class="tag tag-gelal">🚶 Gel-Al</span>' : ''}
-      </div>
-    </div>
-  `).join('');
+function renderSidebar(list) {
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = list.map(function(s) {
+    return '<div class="store-card" data-id="' + s.id + '" onclick="focusStore(' + s.id + ')">' +
+      '<div class="store-name">' + s.name + '</div>' +
+      '<div class="store-address">' + s.address + '</div>' +
+      '<div class="store-tags">' +
+        '<span class="tag tag-city">' + s.city + '</span>' +
+        (s.paket ? '<span class="tag tag-paket">📦 Paket</span>' : '') +
+        (s.gelAl ? '<span class="tag tag-gelal">🚶 Gel-Al</span>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function focusStore(id) {
-  const item = markers.find(m => m.store.id === id);
+  const item = markers.find(function(m) { return m.store.id === id; });
   if (item) {
     map.setView([item.store.lat, item.store.lng], 15);
     item.marker.openPopup();
-    document.querySelectorAll('.store-card').forEach(c => c.classList.remove('active'));
-    document.querySelector(`[data-id="${id}"]`)?.classList.add('active');
+    document.querySelectorAll('.store-card').forEach(function(c) { c.classList.remove('active'); });
+    const el = document.querySelector('[data-id="' + id + '"]');
+    if (el) el.classList.add('active');
+    // On mobile, switch to map view
+    if (window.innerWidth <= 768) {
+      document.getElementById('main').className = 'main map-mode';
+      document.getElementById('toggleBtn').textContent = '📋';
+      setTimeout(function() { map.invalidateSize(); }, 300);
+    }
   }
 }
 
 // Search
-document.getElementById('searchInput').addEventListener('input', (e) => {
+document.getElementById('searchInput').addEventListener('input', function(e) {
   const q = e.target.value.toLowerCase();
-  const filtered = stores.filter(s =>
-    s.name.toLowerCase().includes(q) ||
-    s.address.toLowerCase().includes(q) ||
-    s.city.toLowerCase().includes(q) ||
-    s.district.toLowerCase().includes(q)
-  );
+  const filtered = stores.filter(function(s) {
+    return s.name.toLowerCase().includes(q) ||
+      s.address.toLowerCase().includes(q) ||
+      s.city.toLowerCase().includes(q) ||
+      s.district.toLowerCase().includes(q);
+  });
   renderSidebar(filtered);
 });
+
+// Mobile toggle
+function toggleView() {
+  const main = document.getElementById('main');
+  const btn = document.getElementById('toggleBtn');
+  if (main.classList.contains('map-mode')) {
+    main.className = 'main list-mode';
+    btn.textContent = '🗺️';
+  } else {
+    main.className = 'main map-mode';
+    btn.textContent = '📋';
+    setTimeout(function() { map.invalidateSize(); }, 300);
+  }
+}
 
 // Initial render
 renderSidebar(stores);
